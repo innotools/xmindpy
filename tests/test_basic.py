@@ -87,3 +87,57 @@ def test_minimal_workbook() -> None:
         wb.save(str(out))
         loaded = load_workbook(str(out))
         assert loaded.sheets[0].root_topic.children[0].title == "Step 1"
+
+
+def test_unknown_fields_are_preserved() -> None:
+    """Topics and sheets with unrecognized JSON fields round-trip unchanged.
+
+    Forward-compat guarantee: if XMind adds a new feature (callouts,
+    summaries, boundaries, image refs, ...) and the user has saved a file
+    with it, xmindpy will load and re-save it without losing the data,
+    even if we don't model those features yet.
+    """
+    raw_content = [
+        {
+            "id": "sheet-1",
+            "class": "sheet",
+            "title": "Future-proof sheet",
+            "futureSheetFlag": {"weird": [1, 2, 3]},
+            "rootTopic": {
+                "id": "root-1",
+                "class": "topic",
+                "title": "Root",
+                "callouts": {"attached": [{"title": "Important!"}]},
+                "summary": [{"range": "root-1/child-a", "label": "Summary"}],
+                "image": "xap:resources/future-image.png",
+                "children": {
+                    "attached": [
+                        {"id": "child-a", "class": "topic", "title": "Child"}
+                    ]
+                },
+            },
+        }
+    ]
+
+    wb = Workbook.from_content(raw_content)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out = Path(tmpdir) / "future.xmind"
+        wb.save(str(out))
+
+        with zipfile.ZipFile(out) as z:
+            saved = json.loads(z.read("content.json"))
+
+        sheet = saved[0]
+        assert sheet["futureSheetFlag"] == {"weird": [1, 2, 3]}, "sheet-level extras dropped"
+        root = sheet["rootTopic"]
+        assert "callouts" in root, "topic-level callouts dropped"
+        assert root["summary"][0]["label"] == "Summary", "summary dropped"
+        assert root["image"] == "xap:resources/future-image.png", "image ref dropped"
+
+        # And round-tripping again stays stable.
+        loaded = load_workbook(str(out))
+        loaded.save(out)
+        with zipfile.ZipFile(out) as z:
+            saved2 = json.loads(z.read("content.json"))
+        assert saved2[0]["futureSheetFlag"] == {"weird": [1, 2, 3]}
+        assert saved2[0]["rootTopic"]["summary"][0]["label"] == "Summary"

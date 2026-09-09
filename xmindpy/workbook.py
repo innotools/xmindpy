@@ -11,6 +11,13 @@ def _new_id() -> str:
     return str(uuid.uuid4())
 
 
+# Fields we know how to round-trip; everything else lands in ``_extras``.
+_KNOWN_TOPIC_KEYS = frozenset({
+    "id", "class", "title", "styleId", "labels", "markers", "notes",
+    "hyperlinks", "children", "detached",
+})
+
+
 @dataclass
 class Topic:
     """A node in the mind map.
@@ -18,6 +25,11 @@ class Topic:
     Children are stored on ``self.children`` as a list of ``Topic`` instances.
     Detached floating topics go on ``self.detached`` (rare; mirrors XMind's
     "free" topic positioning).
+
+    Unrecognized JSON fields (e.g. ``callout``, ``summary``, ``boundary``,
+    image references) loaded from a file are preserved in ``self._extras``
+    and re-emitted on save, so the library is forward-compatible with
+    XMind features we don't model explicitly.
     """
 
     title: str
@@ -29,6 +41,7 @@ class Topic:
     markers: list[str] = field(default_factory=list)
     style_id: str | None = None
     hyperlinks: list[str] = field(default_factory=list)
+    _extras: dict[str, Any] = field(default_factory=dict)
 
     def add(self, topic: Topic) -> Topic:
         self.children.append(topic)
@@ -62,6 +75,8 @@ class Topic:
             data["children"] = {"attached": [c.to_dict() for c in self.children]}
         if self.detached:
             data["detached"] = [t.to_dict() for t in self.detached]
+        # Preserve any unrecognized fields as-is (callouts, summaries, etc.)
+        data.update(self._extras)
         return data
 
     @classmethod
@@ -85,36 +100,53 @@ class Topic:
         topic.children = [cls.from_dict(c) for c in children]
         detached = data.get("detached", [])
         topic.detached = [cls.from_dict(t) for t in detached]
+        # Save any unknown keys so re-save doesn't drop them.
+        topic._extras = {k: v for k, v in data.items() if k not in _KNOWN_TOPIC_KEYS}
         return topic
+
+
+# Same pattern for Sheet: keep unknown fields round-trippable.
+_KNOWN_SHEET_KEYS = frozenset({
+    "id", "class", "title", "rootTopic", "relationships",
+})
 
 
 @dataclass
 class Sheet:
-    """One tab / mind map in the workbook."""
+    """One tab / mind map in the workbook.
+
+    Unrecognized JSON fields are preserved in ``self._extras`` so the library
+    is forward-compatible with XMind features we don't model explicitly.
+    """
 
     title: str
     root_topic: Topic
     id: str = field(default_factory=_new_id)
     relationships: list[dict[str, Any]] = field(default_factory=list)
+    _extras: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        data: dict[str, Any] = {
             "id": self.id,
             "class": "sheet",
             "title": self.title,
             "rootTopic": self.root_topic.to_dict(),
             "relationships": list(self.relationships),
         }
+        data.update(self._extras)
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Sheet:
         root = Topic.from_dict(data["rootTopic"])
-        return cls(
+        sheet = cls(
             title=data.get("title", "Sheet"),
             root_topic=root,
             id=data.get("id") or _new_id(),
             relationships=list(data.get("relationships", [])),
         )
+        sheet._extras = {k: v for k, v in data.items() if k not in _KNOWN_SHEET_KEYS}
+        return sheet
 
 
 @dataclass
