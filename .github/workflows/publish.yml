@@ -27,6 +27,11 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        # Trusted publishing — no API token needed if PyPI project is configured
-        # at https://pypi.org/manage/project/xmindpy/settings/publishing/
-        # to trust this repo + workflow.
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+        # First-time publish: use a PyPI API token. Create one at
+        # https://pypi.org/manage/account/token/ (scope: project: xmindpy)
+        # and add it as a repository secret named PYPI_API_TOKEN at
+        # https://github.com/innotools/xmindpy/settings/secrets/actions.
+        # Once the project exists on PyPI, you can migrate to
+        # trusted publishing (OIDC) and remove this token.
