@@ -1,5 +1,7 @@
 # xmindpy
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Modern Python SDK for creating, reading, and editing **XMind 2020+** mind map files (JSON format).
 
 This is a clean rewrite of [zhuifengshen/xmind](https://github.com/zhuifengshen/xmind) — the original library only supports the legacy XMind 2.0 XML format and **cannot produce files that XMind 2020/2022/2024 can open**. This fork replaces the XML DOM core with native Python objects and emits the JSON-based file format that modern XMind expects.

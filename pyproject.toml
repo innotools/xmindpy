@@ -20,9 +20,9 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/Funnlink/xmindpy"
-Repository = "https://github.com/Funnlink/xmindpy"
-Issues = "https://github.com/Funnlink/xmindpy/issues"
+Homepage = "https://github.com/innotools/xmindpy"
+Repository = "https://github.com/innotools/xmindpy"
+Issues = "https://github.com/innotools/xmindpy/issues"
 
 [build-system]
 requires = ["hatchling"]
