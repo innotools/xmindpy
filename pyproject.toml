@@ -1,6 +1,6 @@
 [project]
 name = "xmindpy"
-version = "0.1.0"
+version = "0.2.0"
 description = "Modern Python SDK for XMind 2020+ JSON format. A clean rewrite of zhuifengshen/xmind for the new file format."
 readme = "README.md"
 requires-python = ">=3.10"

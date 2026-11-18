@@ -33,6 +33,7 @@ class Topic:
     """
 
     title: str
+    class_type: Literal["topic", "importantTopic", "minorTopic", "expiredTopic", ""] = ""
     id: str = field(default_factory=_new_id)
     children: list[Topic] = field(default_factory=list)
     detached: list[Topic] = field(default_factory=list)
@@ -56,7 +57,7 @@ class Topic:
     def to_dict(self) -> dict[str, Any]:
         data: dict[str, Any] = {
             "id": self.id,
-            "class": "topic",
+            "class": self.class_type,
             "title": self.title,
         }
         if self.style_id:
@@ -75,6 +76,7 @@ class Topic:
             data["children"] = {"attached": [c.to_dict() for c in self.children]}
         if self.detached:
             data["detached"] = [t.to_dict() for t in self.detached]
+            data["children"]["detached"] = [t.to_dict() for t in self.detached]
         # Preserve any unrecognized fields as-is (callouts, summaries, etc.)
         data.update(self._extras)
         return data
@@ -84,6 +86,7 @@ class Topic:
         topic = cls(
             title=data.get("title", ""),
             id=data.get("id") or _new_id(),
+            class_type=data.get("class", "")
         )
         if "styleId" in data:
             topic.style_id = data["styleId"]

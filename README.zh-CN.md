@@ -19,10 +19,12 @@ from xmindpy import Workbook, Topic
 
 wb = Workbook()
 sheet = wb.create_sheet("项目计划")
-root = Topic("项目计划")
-root.add(Topic("调研"))
-root.add(Topic("设计"))
-root.add(Topic("开发"))
+root = Topic("中心主题", class_type="topic")
+root.add(Topic("极其重要", class_type="importantTopic"))
+root.add(Topic("重要", class_type="minorTopic"))
+root.add(Topic("删去", class_type="expiredTopic"))
+root.add(Topic("普通节点"))
+root.add_detached(Topic("自由主题"))
 sheet.root_topic = root
 
 wb.save("plan.xmind")
